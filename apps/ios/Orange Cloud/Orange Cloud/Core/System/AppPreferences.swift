@@ -1,0 +1,75 @@
+//
+//  AppPreferences.swift
+//  Orange Cloud
+//
+//  App 级显示偏好：外观（跟随系统 / 亮色 / 暗色）与界面语言。
+//  外观经根视图 preferredColorScheme 即时生效；
+//  语言写 AppleLanguages 覆盖（与系统「按 App 设定语言」同一机制），重新打开 App 生效。
+//
+
+import SwiftUI
+
+/// 外观模式，存 UserDefaults（appAppearance）
+nonisolated enum AppAppearance: String, CaseIterable, Identifiable, Sendable {
+
+    case system
+    case light
+    case dark
+
+    var id: String { rawValue }
+
+    static let storageKey = "appAppearance"
+
+    var label: String {
+        switch self {
+        case .system: String(localized: "跟随系统")
+        case .light:  String(localized: "亮色")
+        case .dark:   String(localized: "暗色")
+        }
+    }
+
+    /// nil = 跟随系统
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: nil
+        case .light:  .light
+        case .dark:   .dark
+        }
+    }
+}
+
+/// 界面语言，存 UserDefaults（appLanguage）。rawValue 即语言代码（system 除外）。
+nonisolated enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
+
+    case system = "system"
+    case zhHans = "zh-Hans"
+    case en     = "en"
+    case zhHant = "zh-Hant"
+    case zhHK   = "zh-HK"
+    case ja     = "ja"
+
+    var id: String { rawValue }
+
+    static let storageKey = "appLanguage"
+
+    /// 语言名按各自语言原文显示（不随界面语言翻译），仅「跟随系统」走本地化
+    var label: String {
+        switch self {
+        case .system: String(localized: "跟随系统")
+        case .zhHans: "简体中文"
+        case .en:     "English"
+        case .zhHant: "繁體中文（台灣）"
+        case .zhHK:   "繁體中文（香港）"
+        case .ja:     "日本語"
+        }
+    }
+
+    /// 写 / 清除 AppleLanguages 覆盖，重新打开 App 后生效
+    func apply() {
+        if self == .system {
+            UserDefaults.standard.removeObject(forKey: "AppleLanguages")
+        } else {
+            UserDefaults.standard.set([rawValue], forKey: "AppleLanguages")
+        }
+    }
+}
