@@ -17,6 +17,15 @@ const OG_LOCALES: Record<string, string> = {
 	ja: "ja_JP",
 };
 
+// 各语言社交分享图（晨昏横幅，1280×640）。生成：orange-cloud/appstore/render/og.mjs
+const OG_IMAGES: Record<string, string> = {
+	en: "/og/en.jpg",
+	"zh-Hans": "/og/zh-Hans.jpg",
+	"zh-Hant": "/og/zh-Hant.jpg",
+	"zh-HK": "/og/zh-HK.jpg",
+	ja: "/og/ja.jpg",
+};
+
 export function generateStaticParams() {
 	return routing.locales.map((locale) => ({ locale }));
 }
@@ -30,6 +39,7 @@ export async function generateMetadata({
 	if (!hasLocale(routing.locales, locale)) notFound();
 	const t = await getTranslations({ locale, namespace: "meta" });
 	const path = locale === routing.defaultLocale ? "/" : `/${locale}`;
+	const ogImage = OG_IMAGES[locale] ?? OG_IMAGES.en;
 
 	return {
 		metadataBase: new URL(SITE_URL),
@@ -60,12 +70,13 @@ export async function generateMetadata({
 			siteName: "Orange Cloud",
 			type: "website",
 			locale: OG_LOCALES[locale],
-			images: [{ url: "/icons/icon-512.png", width: 512, height: 512 }],
+			images: [{ url: ogImage, width: 1280, height: 640, alt: t("title") }],
 		},
 		twitter: {
-			card: "summary",
+			card: "summary_large_image",
 			title: t("title"),
 			description: t("description"),
+			images: [ogImage],
 		},
 		itunes: {
 			appId: "6779323783",
