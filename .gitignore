@@ -30,3 +30,9 @@ CLAUDE.md
 apps/ios/fastlane
 
 *.storekit
+
+videos/
+skills-lock.json
+
+.agents
+.claude/
