@@ -22,18 +22,32 @@ nonisolated struct WhatsNewRelease: Sendable {
 
 nonisolated enum WhatsNewContent {
     static let releases: [WhatsNewRelease] = [
-        WhatsNewRelease(version: "1.2.0", items: [
+        // 1.1.0 / 1.2.0 因审核延误未公开发布，自上个公开版本起的全部新变动统一并入 1.2.1。
+        WhatsNewRelease(version: "1.2.1", items: [
+            WhatsNewItem(
+                icon:   "applewatch",
+                title:  String(localized: "Apple Watch App"),
+                detail: String(localized: "把域名状态与流量概览带上手腕，还能添加到表盘复杂功能随时一瞥。")
+            ),
+            WhatsNewItem(
+                icon:   "curlybraces",
+                title:  String(localized: "Snippets"),
+                detail: String(localized: "在域名详情查看、编辑、新建 Cloudflare 边缘代码片段，并管理触发规则——轻量版 Workers，Pro 解锁。")
+            ),
             WhatsNewItem(
                 icon:   "accessibility",
                 title:  String(localized: "全面无障碍"),
                 detail: String(localized: "VoiceOver、更大字体、不只靠颜色区分、足够对比度全面达标，配合系统辅助功能更顺手。")
             ),
-        ]),
-        WhatsNewRelease(version: "1.1.0", items: [
             WhatsNewItem(
-                icon:   "curlybraces",
-                title:  String(localized: "Snippets"),
-                detail: String(localized: "在域名详情查看、编辑、新建 Cloudflare 边缘代码片段，并管理触发规则——轻量版 Workers，Pro 解锁。")
+                icon:   "character.bubble",
+                title:  String(localized: "更多语言"),
+                detail: String(localized: "新增西班牙语、韩语、葡萄牙语，现已支持九种语言。")
+            ),
+            WhatsNewItem(
+                icon:   "arrow.clockwise",
+                title:  String(localized: "刷新更省心"),
+                detail: String(localized: "刷新失败不再弹窗打断，下拉刷新更稳定可靠。")
             ),
         ]),
     ]

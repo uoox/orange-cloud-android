@@ -415,6 +415,8 @@ final class KVKeyListViewModel {
     private let service: KVService
     private let accountId: String
     private let namespaceId: String
+    /// 进行中的加载任务（见 ZoneListViewModel：独立 Task 承载加载，避免下拉手势取消导致 .cancelled 误报）
+    private var loadTask: Task<Void, Never>?
 
     init(service: KVService, accountId: String, namespaceId: String) {
         self.service = service
@@ -423,12 +425,32 @@ final class KVKeyListViewModel {
     }
 
     func load() async {
+        // 复用进行中的加载，并把网络加载放进独立 Task：下拉手势 / searchable 取消
+        // .refreshable 子任务时不波及加载，避免 URLError.cancelled 误报为加载失败
+        if let loadTask {
+            await loadTask.value
+            return
+        }
+        let task = Task { [weak self] in
+            guard let self else { return }
+            await self.fetchKeys()
+        }
+        loadTask = task
+        defer { loadTask = nil }
+        await task.value
+    }
+
+    private func fetchKeys() async {
         isLoading = true
         error = nil
         do {
             let page = try await service.listKeys(accountId: accountId, namespaceId: namespaceId)
             keys = page.keys
             nextCursor = page.nextCursor
+        } catch is CancellationError {
+            // 任务取消属正常生命周期，不算加载失败
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            // URLSession 把任务取消转成 .cancelled，同样不展示为错误
         } catch {
             self.error = error.localizedDescription
         }

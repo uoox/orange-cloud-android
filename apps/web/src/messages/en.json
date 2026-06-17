@@ -122,21 +122,16 @@
 		"tfNote": "Requires iOS 17.0 or later · Apple devices only",
 		"entries": [
 			{
-				"version": "1.2.0",
-				"date": "2026.06.17",
-				"channel": "App Store",
-				"notes": [
-					"Fully accessible: VoiceOver, larger text, color-independent cues, and sufficient contrast throughout"
-				]
-			},
-			{
-				"version": "1.1.0",
-				"date": "2026.06.17",
+				"version": "1.2.1",
+				"date": "2026.06.18",
 				"channel": "App Store",
 				"notes": [
 					"Apple Watch app: your domains and 24-hour requests on your wrist, plus watch-face complications",
 					"Lock Screen widgets: account requests, a domain's traffic, or your usage gauge — a glance away",
 					"Snippets: view, edit, and create Cloudflare edge code snippets and their rules from any domain (Pro)",
+					"Fully accessible: VoiceOver, larger text, color-independent cues, and sufficient contrast throughout",
+					"Added Spanish, Korean, and Portuguese — now in nine languages",
+					"Refresh failures no longer interrupt with alerts, and pull-to-refresh is steadier",
 					"Refinements and fixes throughout"
 				]
 			},

@@ -122,21 +122,16 @@
 		"tfNote": "Requer iOS 17.0 ou posterior · Apenas dispositivos Apple",
 		"entries": [
 			{
-				"version": "1.2.0",
-				"date": "2026.06.17",
-				"channel": "App Store",
-				"notes": [
-					"Totalmente acessível: VoiceOver, texto maior, indicações que não dependem só da cor e contraste suficiente"
-				]
-			},
-			{
-				"version": "1.1.0",
-				"date": "2026.06.17",
+				"version": "1.2.1",
+				"date": "2026.06.18",
 				"channel": "App Store",
 				"notes": [
 					"App para Apple Watch: seus domínios e as solicitações de 24 horas no pulso, com complicações no mostrador",
 					"Widgets da tela bloqueada: solicitações da conta, o tráfego de um domínio ou seu medidor de uso, num relance",
 					"Snippets: veja, edite e crie snippets de código edge da Cloudflare e suas regras a partir de qualquer domínio (Pro)",
+					"Totalmente acessível: VoiceOver, texto maior, indicações que não dependem só da cor e contraste suficiente",
+					"Adicionados espanhol, coreano e português — agora em nove idiomas",
+					"Falhas ao atualizar não interrompem mais com alertas e o puxar para atualizar ficou mais estável",
 					"Melhorias e correções no geral"
 				]
 			},
