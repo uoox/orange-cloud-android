@@ -258,10 +258,9 @@
     <string name="settings_appearance_dark">深色</string>
     <string name="settings_notif">通知</string>
     <string name="settings_notif_master">允许通知</string>
-    <string name="settings_notif_zone">域名状态变更</string>
     <string name="settings_notif_worker">Worker 错误通知</string>
-    <string name="settings_notif_footer_on">后台刷新时，重要变化会推送提醒。</string>
-    <string name="settings_notif_footer_off">开启后可在域名状态变化或 Worker 报错时收到提醒。</string>
+    <string name="settings_notif_footer_on">Worker tail 期间会推送实时日志通知。</string>
+    <string name="settings_notif_footer_off">开启后可在 Worker tail 期间收到实时日志提醒。</string>
     <string name="settings_service">服务状态</string>
     <string name="settings_service_footer">查看 Cloudflare 各组件的实时运行状态。</string>
     <string name="settings_about">关于</string>

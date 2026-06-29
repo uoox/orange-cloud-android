@@ -12,13 +12,18 @@ import jiamin.chen.orangecloud.core.di.ApplicationScope
 import jiamin.chen.orangecloud.core.network.AccessTokenProvider
 import jiamin.chen.orangecloud.core.network.ApiError
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
+import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -78,6 +83,11 @@ class AuthRepository @Inject constructor(
         if (_state.value.redirectError != null) {
             _state.value = _state.value.copy(redirectError = null)
         }
+    }
+
+    /** 登录前置步骤失败（如构造授权 URL 抛错）时，由 UI 层调用以展示错误。 */
+    fun reportRedirectError(reason: String) {
+        _state.value = _state.value.copy(redirectError = reason)
     }
 
     // MARK: - 登录
@@ -162,7 +172,28 @@ class AuthRepository @Inject constructor(
         return if (secondsLeft < 60) refreshAccessToken() else token.accessToken
     }
 
+    /**
+     * 单飞刷新：CfApiClient 为 @Singleton 被所有 repository 共享，进入主界面会并发拉
+     * zones/workers/analytics，多个调用可能同时遇到临期 token 或 401。Cloudflare 的
+     * refresh_token 是一次性轮换的——若并发刷新，第二个会拿着已失效的旧 refresh_token 请求
+     * 而失败。这里用 Mutex 守护一个共享 [Deferred]：首个调用发起刷新，其余复用同一结果；
+     * 刷新跑在 [externalScope]，调用方取消不会中断它（但 await 会随调用方取消而传播）。
+     */
+    private val refreshMutex = Mutex()
+    private var refreshJob: Deferred<String>? = null
+
     override suspend fun refreshAccessToken(): String {
+        val job = refreshMutex.withLock {
+            refreshJob ?: externalScope.async { performRefresh() }.also { refreshJob = it }
+        }
+        return try {
+            job.await()
+        } finally {
+            refreshMutex.withLock { if (refreshJob === job) refreshJob = null }
+        }
+    }
+
+    private suspend fun performRefresh(): String {
         val sessionId = _state.value.currentSessionId
         val stored = sessionId?.let { tokenStore.load(it) }
         val refresh = stored?.refreshToken
@@ -180,11 +211,16 @@ class AuthRepository @Inject constructor(
             ).toStoredToken(previousScope = stored.scope, previousRefresh = refresh)
             tokenStore.save(sessionId, newToken)
             newToken.accessToken
-        } catch (e: Exception) {
-            // refresh_token 失效：移除该身份（其他身份不受影响）
-            removeSession(sessionId)
-            throw ApiError.Unauthorized
+        } catch (e: TokenExchangeException) {
+            // 仅当 refresh_token 确实失效（4xx，排除 429 限流）才移除身份；
+            // 服务端错误（5xx）/限流不登出，向上抛网络错误让调用方稍后重试。
+            if (e.statusCode in 400..499 && e.statusCode != 429) {
+                removeSession(sessionId)
+                throw ApiError.Unauthorized
+            }
+            throw ApiError.Network(IOException(e.message, e))
         }
+        // ApiError.Network（网络抖动）不在此捕获，直接上抛——保留身份，下次重试。
     }
 
     // MARK: - 身份管理

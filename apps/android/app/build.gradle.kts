@@ -22,6 +22,12 @@ fun oauthClientId(default: String): String =
         ?: providers.gradleProperty("OAUTH_CLIENT_ID").orNull
         ?: default
 
+// 发布签名参数：从 local.properties 或环境变量读取（均不入库）。缺失时 release 保持未签名，
+// 不影响他人构建（构建仍成功，只是产物需自行签名）。
+fun signingProp(key: String): String? =
+    localProps.getProperty(key) ?: System.getenv(key)
+val releaseStoreFile: String? = signingProp("RELEASE_STORE_FILE")
+
 android {
     namespace = "jiamin.chen.orangecloud"
     compileSdk = 36
@@ -56,11 +62,24 @@ android {
         }
     }
 
+    signingConfigs {
+        if (releaseStoreFile != null) {
+            create("release") {
+                storeFile = file(releaseStoreFile)
+                storePassword = signingProp("RELEASE_STORE_PASSWORD")
+                keyAlias = signingProp("RELEASE_KEY_ALIAS")
+                keyPassword = signingProp("RELEASE_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // 提供签名凭据时启用发布签名（local.properties / 环境变量），否则产物未签名。
+            signingConfigs.findByName("release")?.let { signingConfig = it }
         }
         debug {
             applicationIdSuffix = ".debug"

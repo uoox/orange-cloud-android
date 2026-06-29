@@ -20,7 +20,7 @@ class CloudflareOAuthApi @Inject constructor(
     suspend fun requestToken(params: Map<String, String>): TokenResponse {
         val request = Request.Builder().url(OAuthConfig.TOKEN_URL).post(formBody(params)).build()
         val (code, text) = execute(request)
-        if (code !in 200..299) throw TokenExchangeException("HTTP $code $text")
+        if (code !in 200..299) throw TokenExchangeException("HTTP $code $text", statusCode = code)
         return runCatching { json.decodeFromString(TokenResponse.serializer(), text) }
             .getOrElse { throw TokenExchangeException("token response decode failed") }
     }
@@ -54,4 +54,5 @@ class CloudflareOAuthApi @Inject constructor(
     }
 }
 
-class TokenExchangeException(message: String) : Exception(message)
+/** token / refresh 端点失败。statusCode 为 HTTP 状态码（0 = 解码失败等非 HTTP 错误）。 */
+class TokenExchangeException(message: String, val statusCode: Int = 0) : Exception(message)

@@ -24,7 +24,7 @@ import javax.inject.Inject
 class WorkerDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     accountStore: AccountStore,
-    workerRepository: WorkerRepository,
+    private val workerRepository: WorkerRepository,
     private val analyticsRepository: AnalyticsRepository,
     authRepository: AuthRepository,
 ) : ViewModel() {
@@ -45,6 +45,10 @@ class WorkerDetailViewModel @Inject constructor(
     val metrics: StateFlow<WorkerMetrics?> = _metrics.asStateFlow()
 
     init {
+        // 详情依赖列表缓存；深链 / 进程恢复后缓存可能为空，主动刷新一次兜底（observeWorkers 会随之更新）。
+        if (accountId != null) {
+            viewModelScope.launch { runCatching { workerRepository.refreshWorkers(accountId) } }
+        }
         if (accountId != null && authRepository.hasScope(Scopes.ANALYTICS_READ)) {
             viewModelScope.launch {
                 _metrics.value = runCatching { analyticsRepository.workerMetrics(accountId, scriptName) }.getOrNull()

@@ -82,7 +82,7 @@ private fun DnsRecordForm(
     val supportsProxy = DnsForm.supportsProxy(type)
     val needsPriority = DnsForm.needsPriority(type)
     val effectiveProxied = supportsProxy && proxied
-    val canSave = name.isNotBlank() && content.isNotBlank() && !isSaving
+    val canSave = name.isNotBlank() && DnsForm.isContentValid(type, content) && !isSaving
 
     Column(
         modifier = Modifier

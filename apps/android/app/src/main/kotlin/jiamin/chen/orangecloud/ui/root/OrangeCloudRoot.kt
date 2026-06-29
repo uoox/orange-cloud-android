@@ -1,5 +1,6 @@
 package jiamin.chen.orangecloud.ui.root
 
+import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -70,14 +71,19 @@ import jiamin.chen.orangecloud.ui.workers.WorkerListScreen
 import jiamin.chen.orangecloud.ui.workers.WorkerTailScreen
 import jiamin.chen.orangecloud.ui.zones.ZoneDetailScreen
 import jiamin.chen.orangecloud.ui.zones.ZonesPaneScreen
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import java.time.LocalTime
 
 @Composable
-fun OrangeCloudRoot(viewModel: RootViewModel = hiltViewModel()) {
+fun OrangeCloudRoot(
+    viewModel: RootViewModel = hiltViewModel(),
+    newIntents: Flow<Intent> = emptyFlow(),
+) {
     val authState by viewModel.authState.collectAsStateWithLifecycle()
     when {
         !authState.isReady -> SplashScreen()
-        authState.isLoggedIn -> MainScaffold()
+        authState.isLoggedIn -> MainScaffold(newIntents)
         else -> LoginScreen()
     }
 }
@@ -162,12 +168,17 @@ private fun zoneArgs() = listOf(
 
 @OptIn(ExperimentalMaterial3AdaptiveNavigationSuiteApi::class)
 @Composable
-private fun MainScaffold() {
+private fun MainScaffold(newIntents: Flow<Intent> = emptyFlow()) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     // 下钻页（DNS / Worker 详情）仍高亮其父标签
     val selectedTop = Dest.topOf(currentRoute)
+
+    // 热启动时把 QS 磁贴 / App Shortcuts 的深链交给 NavController（冷启动由 NavHost 自动消费 intent）。
+    LaunchedEffect(navController) {
+        newIntents.collect { intent -> navController.handleDeepLink(intent) }
+    }
 
     val whatsNewViewModel: WhatsNewViewModel = hiltViewModel()
     val whatsNewRelease by whatsNewViewModel.release.collectAsStateWithLifecycle()

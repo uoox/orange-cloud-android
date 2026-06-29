@@ -187,8 +187,6 @@ fun SettingsScreen(
                 ToggleRow(Icons.Outlined.Notifications, OcOrange, stringResource(R.string.settings_notif_master), state.notificationsEnabled) { toggleNotifications(it) }
                 if (state.notificationsEnabled) {
                     RowDivider(indent = true)
-                    ToggleRow(Icons.Outlined.MonitorHeart, OcOrange, stringResource(R.string.settings_notif_zone), state.notifyZoneStatus, viewModel::setNotifyZoneStatus)
-                    RowDivider(indent = true)
                     ToggleRow(Icons.Outlined.Notifications, cs.error, stringResource(R.string.settings_notif_worker), state.notifyWorkerErrors, viewModel::setNotifyWorkerErrors)
                 }
             }

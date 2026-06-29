@@ -1,6 +1,7 @@
 package jiamin.chen.orangecloud.core.system
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -16,18 +17,34 @@ import androidx.core.content.ContextCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import jiamin.chen.orangecloud.MainActivity
 import jiamin.chen.orangecloud.R
+import jiamin.chen.orangecloud.core.di.ApplicationScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Workers tail 实时日志通知（对应 iOS tail Live Activity）。
  * 连接期间常驻通知显示事件数 + 最新行；Android 16（API 36）请求促升为实况通知，低版本常规常驻。
+ *
+ * 受设置页通知偏好约束：仅当「通知」总开关与「Worker 错误」均开启、且系统已授予
+ * POST_NOTIFICATIONS 时才推送（偏好从 DataStore 流式缓存，供非挂起的 [update] 同步读取）。
  */
 @Singleton
 class TailNotifier @Inject constructor(
     @ApplicationContext private val context: Context,
+    appPrefs: AppPrefs,
+    @ApplicationScope externalScope: CoroutineScope,
 ) {
     private val manager = NotificationManagerCompat.from(context)
+
+    @Volatile private var notificationsEnabled = false
+    @Volatile private var workerErrorsEnabled = true
+
+    init {
+        externalScope.launch { appPrefs.notificationsEnabled.collect { notificationsEnabled = it } }
+        externalScope.launch { appPrefs.notifyWorkerErrors.collect { workerErrorsEnabled = it } }
+    }
 
     private fun ensureChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -40,7 +57,10 @@ class TailNotifier @Inject constructor(
         Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
+    // hasPermission() 已确认 POST_NOTIFICATIONS；notify() 另有 runCatching 兜底 SecurityException。
+    @SuppressLint("MissingPermission")
     fun update(scriptName: String, eventCount: Int, lastLine: String, connected: Boolean) {
+        if (!notificationsEnabled || !workerErrorsEnabled) return
         if (!hasPermission()) return
         ensureChannel()
         val intent = Intent(context, MainActivity::class.java).apply {

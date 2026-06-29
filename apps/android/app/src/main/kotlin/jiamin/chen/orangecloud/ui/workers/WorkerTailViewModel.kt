@@ -6,11 +6,13 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jiamin.chen.orangecloud.core.auth.AuthRepository
 import jiamin.chen.orangecloud.core.auth.Scopes
+import jiamin.chen.orangecloud.core.di.ApplicationScope
 import jiamin.chen.orangecloud.core.system.TailNotifier
 import jiamin.chen.orangecloud.data.model.TailTraceItem
 import jiamin.chen.orangecloud.data.model.tailDisplayText
 import jiamin.chen.orangecloud.data.repository.AccountStore
 import jiamin.chen.orangecloud.data.repository.WorkerTailRepository
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -44,6 +46,7 @@ class WorkerTailViewModel @Inject constructor(
     accountStore: AccountStore,
     private val tailRepository: WorkerTailRepository,
     private val tailNotifier: TailNotifier,
+    @ApplicationScope private val externalScope: CoroutineScope,
     authRepository: AuthRepository,
 ) : ViewModel() {
 
@@ -184,6 +187,14 @@ class WorkerTailViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         tailNotifier.cancel()
+        // 正常返回上一页时 Compose 不会调 stop()，viewModelScope 随之取消故无法在其内删除；
+        // 用 application scope 兜底删除服务端 tail session，避免泄漏（collectJob 已随 scope 取消）。
+        val id = tailId
+        val acct = accountId
+        tailId = null
+        if (id != null && acct != null) {
+            externalScope.launch { runCatching { tailRepository.deleteTail(acct, scriptName, id) } }
+        }
     }
 
     private fun line(timestampMs: Long, level: String, text: String) =

@@ -62,6 +62,18 @@ class DashboardViewModel @Inject constructor(
 
     fun selectAccount(accountId: String) {
         accountStore.select(accountId)
+        // 切账号先清空上一账号的统计与最近域名，避免加载期间串号展示旧数据
+        _uiState.update {
+            it.copy(
+                accountName = "",
+                accountEmail = "",
+                zoneCount = "—",
+                workerCount = "—",
+                bucketCount = "—",
+                requestsToday = "—",
+                recentZones = emptyList(),
+            )
+        }
         refresh()
     }
 

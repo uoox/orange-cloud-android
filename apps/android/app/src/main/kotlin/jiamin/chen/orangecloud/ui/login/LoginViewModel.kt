@@ -45,6 +45,7 @@ class LoginViewModel @Inject constructor(
             authRepository.clearRedirectError()
             runCatching { authRepository.buildAuthorizationUri(scopeString, freshLogin) }
                 .onSuccess { launchChannel.send(it) }
+                .onFailure { authRepository.reportRedirectError(it.message ?: "error") }
         }
     }
 }

@@ -60,6 +60,9 @@ class ZoneSettingsViewModel @Inject constructor(
     private val eventChannel = Channel<ZoneSettingsEvent>(Channel.BUFFERED)
     val events: Flow<ZoneSettingsEvent> = eventChannel.receiveAsFlow()
 
+    /** 关闭「I'm Under Attack」时恢复到的安全级别（进入页面时的非 under_attack 原值）。 */
+    private var baseSecurityLevel = "medium"
+
     init {
         if (hasRead) load()
     }
@@ -71,10 +74,13 @@ class ZoneSettingsViewModel @Inject constructor(
             try {
                 val dev = async { runCatching { repository.getSetting(zoneId, "development_mode") }.getOrNull() }
                 val sec = async { runCatching { repository.getSetting(zoneId, "security_level") }.getOrNull() }
+                val secLevel = sec.await()
+                // 记住原始安全级别（如 high/low/essentially_off），关闭 under_attack 时恢复它而非硬降为 medium
+                if (secLevel != null && secLevel != "under_attack") baseSecurityLevel = secLevel
                 _uiState.update {
                     it.copy(
                         developmentMode = dev.await() == "on",
-                        underAttack = sec.await() == "under_attack",
+                        underAttack = secLevel == "under_attack",
                     )
                 }
             } finally {
@@ -96,7 +102,8 @@ class ZoneSettingsViewModel @Inject constructor(
         if (!canWrite) return
         _uiState.update { it.copy(underAttack = on) }
         viewModelScope.launch {
-            runCatching { repository.setSetting(zoneId, "security_level", if (on) "under_attack" else "medium") }
+            val target = if (on) "under_attack" else baseSecurityLevel
+            runCatching { repository.setSetting(zoneId, "security_level", target) }
                 .onFailure { eventChannel.send(ZoneSettingsEvent.Error(it.message)); load() }
         }
     }

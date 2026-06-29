@@ -23,7 +23,6 @@ data class SettingsUiState(
     val isPro: Boolean = false,
     val appearance: AppAppearance = AppAppearance.SYSTEM,
     val notificationsEnabled: Boolean = false,
-    val notifyZoneStatus: Boolean = true,
     val notifyWorkerErrors: Boolean = true,
 )
 
@@ -42,18 +41,16 @@ class SettingsViewModel @Inject constructor(
             authRepository.state,
             entitlementStore.isPro,
             appPrefs.appearance,
-            combine(appPrefs.notificationsEnabled, appPrefs.notifyZoneStatus, appPrefs.notifyWorkerErrors) { master, zone, worker ->
-                Triple(master, zone, worker)
-            },
-        ) { auth, isPro, appearance, notif ->
+            appPrefs.notificationsEnabled,
+            appPrefs.notifyWorkerErrors,
+        ) { auth, isPro, appearance, master, worker ->
             SettingsUiState(
                 sessions = auth.sessions,
                 currentSessionId = auth.currentSessionId,
                 isPro = isPro,
                 appearance = appearance,
-                notificationsEnabled = notif.first,
-                notifyZoneStatus = notif.second,
-                notifyWorkerErrors = notif.third,
+                notificationsEnabled = master,
+                notifyWorkerErrors = worker,
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
@@ -71,10 +68,6 @@ class SettingsViewModel @Inject constructor(
 
     fun setNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch { appPrefs.setNotificationsEnabled(enabled) }
-    }
-
-    fun setNotifyZoneStatus(enabled: Boolean) {
-        viewModelScope.launch { appPrefs.setNotifyZoneStatus(enabled) }
     }
 
     fun setNotifyWorkerErrors(enabled: Boolean) {
