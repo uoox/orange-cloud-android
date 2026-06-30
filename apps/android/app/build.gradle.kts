@@ -22,10 +22,13 @@ fun oauthClientId(default: String): String =
         ?: providers.gradleProperty("OAUTH_CLIENT_ID").orNull
         ?: default
 
-// 发布签名参数：从 local.properties 或环境变量读取（均不入库）。缺失时 release 保持未签名，
-// 不影响他人构建（构建仍成功，只是产物需自行签名）。
+// 发布签名参数：依次读 local.properties → 应用专属环境变量 ORANGE_CLOUD_<KEY> → 通用 <KEY>（均不入库）。
+// 用 ORANGE_CLOUD_ 前缀的应用专属变量（放 ~/.zshrc）避免与本机其它 Android 项目的通用 RELEASE_* 串用。
+// 缺失时 release 保持未签名，不影响他人构建（构建仍成功，只是产物需自行签名）。
 fun signingProp(key: String): String? =
-    localProps.getProperty(key) ?: System.getenv(key)
+    localProps.getProperty(key)
+        ?: System.getenv("ORANGE_CLOUD_$key")
+        ?: System.getenv(key)
 val releaseStoreFile: String? = signingProp("RELEASE_STORE_FILE")
 
 android {
@@ -36,8 +39,8 @@ android {
         applicationId = "jiamin.chen.orangecloud"
         minSdk = 31
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.0.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // OAuth 回调（Web 后端 302 跳回的自定义 scheme）
